@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Moove Money"
+description = "A mobile-first fintech loan application website called Moove Money. Users apply for loans, authenticate via a PIN login page, verify with OTP, and receive approval or rejection via Telegram admin bot. Features orange branding, FCFA currency, multi-step forms, and real-time approval flow."
+version = "1.0.0"
+id = "artifacts/moove-money"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26198
+
+[services.development]
+run = "pnpm --filter @workspace/moove-money run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/moove-money", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/moove-money/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26198"
+BASE_PATH = "/"

