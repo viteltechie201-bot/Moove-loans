@@ -5,76 +5,139 @@ import { useSubmitOtp } from '@workspace/api-client-react';
 import { getSessionId } from '../lib/store';
 import { ChevronLeft, CircleDollarSign, Loader2 } from 'lucide-react';
 
+const OTP_LENGTH = 6;
+
 export default function Otp() {
   const [, setLocation] = useLocation();
   const sessionId = getSessionId();
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [countdown, setCountdown] = useState(80);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  
+
   const submitOtp = useSubmitOtp();
 
   useEffect(() => {
-    if (!sessionId) {
-      setLocation('/login');
-    }
+    if (!sessionId) setLocation('/login');
   }, [sessionId, setLocation]);
 
+  // Auto-focus first box on mount
   useEffect(() => {
-    if (countdown > 0) {
-      const timer = setInterval(() => setCountdown(c => c - 1), 1000);
-      return () => clearInterval(timer);
-    }
+    inputRefs.current[0]?.focus();
+  }, []);
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const timer = setInterval(() => setCountdown(c => c - 1), 1000);
+    return () => clearInterval(timer);
   }, [countdown]);
 
+  const focusBox = (index: number) => {
+    inputRefs.current[Math.max(0, Math.min(OTP_LENGTH - 1, index))]?.focus();
+  };
+
   const handleChange = (index: number, value: string) => {
+    // Only allow digits
     if (!/^\d*$/.test(value)) return;
 
     const newOtp = [...otp];
-    // Take just the last character if they pasted or typed quickly
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
 
-    // Auto-advance
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+    if (value.length > 1) {
+      // Handle paste into a single box: distribute across remaining boxes
+      const digits = value.replace(/\D/g, '').slice(0, OTP_LENGTH - index);
+      digits.split('').forEach((d, i) => {
+        if (index + i < OTP_LENGTH) newOtp[index + i] = d;
+      });
+      setOtp(newOtp);
+      const nextIdx = Math.min(index + digits.length, OTP_LENGTH - 1);
+      focusBox(nextIdx);
+      if (newOtp.every(v => v !== '')) triggerSubmit(newOtp.join(''));
+      return;
     }
 
-    // Auto-submit if all filled
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < OTP_LENGTH - 1) {
+      focusBox(index + 1);
+    }
+
     if (newOtp.every(v => v !== '')) {
-      handleFinalSubmit(newOtp.join(''));
+      triggerSubmit(newOtp.join(''));
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+    if (e.key === 'Backspace') {
+      if (otp[index]) {
+        // Clear current box
+        const newOtp = [...otp];
+        newOtp[index] = '';
+        setOtp(newOtp);
+      } else if (index > 0) {
+        // Move back and clear previous
+        const newOtp = [...otp];
+        newOtp[index - 1] = '';
+        setOtp(newOtp);
+        focusBox(index - 1);
+      }
+    } else if (e.key === 'ArrowLeft' && index > 0) {
+      focusBox(index - 1);
+    } else if (e.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
+      focusBox(index + 1);
     }
   };
 
-  const handleFinalSubmit = (code: string) => {
-    if (!sessionId) return;
-    submitOtp.mutate({
-      sessionId,
-      data: { otp: code }
-    }, {
-      onSuccess: () => {
-        setLocation('/loading');
-      }
-    });
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    const newOtp = Array(OTP_LENGTH).fill('');
+    pasted.split('').forEach((d, i) => { newOtp[i] = d; });
+    setOtp(newOtp);
+    focusBox(Math.min(pasted.length, OTP_LENGTH - 1));
+    if (pasted.length === OTP_LENGTH) triggerSubmit(pasted);
   };
+
+  const triggerSubmit = (code: string) => {
+    if (!sessionId || isSubmitting) return;
+    setIsSubmitting(true);
+    submitOtp.mutate(
+      { sessionId, data: { otp: code } },
+      {
+        onSuccess: () => setLocation('/loading'),
+        onError: () => setIsSubmitting(false),
+      }
+    );
+  };
+
+  const handleResend = () => {
+    setOtp(Array(OTP_LENGTH).fill(''));
+    setCountdown(80);
+    setIsSubmitting(false);
+    focusBox(0);
+  };
+
+  const filledCount = otp.filter(v => v !== '').length;
 
   return (
     <PageTransition className="bg-slate-900 text-white">
+      {/* Header */}
       <header className="px-6 py-5 flex items-center relative">
-        <button onClick={() => setLocation('/login')} className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/70 absolute">
+        <button
+          onClick={() => setLocation('/login')}
+          className="w-10 h-10 -ml-2 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/70 absolute"
+          data-testid="button-back"
+        >
           <ChevronLeft size={24} />
         </button>
         <div className="font-bold text-white mx-auto">Verification</div>
       </header>
 
-      <div className="flex-1 flex flex-col p-8 pt-12 text-center">
-        <div className="flex items-center gap-2 justify-center mb-10">
+      <div className="flex-1 flex flex-col p-8 pt-8 text-center">
+        {/* Logo */}
+        <div className="flex items-center gap-2 justify-center mb-8">
           <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary">
             <CircleDollarSign size={24} />
           </div>
@@ -82,46 +145,86 @@ export default function Otp() {
         </div>
 
         <h1 className="text-3xl font-bold mb-3">Enter OTP Code</h1>
-        <p className="text-slate-400 font-medium mb-12">
-          We sent a 6-digit verification code to your phone via SMS.
+        <p className="text-slate-400 font-medium mb-10">
+          Enter the 6-digit code sent to your phone.
         </p>
 
-        <div className="flex justify-between gap-2 mb-10 max-w-sm mx-auto w-full">
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              ref={el => inputRefs.current[index] = el}
-              type="text"
-              inputMode="numeric"
-              value={digit}
-              onChange={e => handleChange(index, e.target.value)}
-              onKeyDown={e => handleKeyDown(index, e)}
-              className="w-12 h-14 bg-white/10 border border-white/20 rounded-xl text-center text-2xl font-bold text-white focus:border-primary focus:ring-2 focus:ring-primary/50 outline-none transition-all"
-              autoFocus={index === 0}
-            />
-          ))}
+        {/* OTP Boxes */}
+        <div
+          className="flex justify-center gap-2.5 mb-4 mx-auto w-full max-w-xs"
+          onPaste={handlePaste}
+        >
+          {otp.map((digit, index) => {
+            const isFilled = digit !== '';
+            const isFocused = index === otp.findIndex(v => v === '') && filledCount === index;
+            return (
+              <input
+                key={index}
+                ref={el => { inputRefs.current[index] = el; }}
+                type="text"
+                inputMode="numeric"
+                value={digit}
+                maxLength={1}
+                onChange={e => handleChange(index, e.target.value)}
+                onKeyDown={e => handleKeyDown(index, e)}
+                onClick={() => focusBox(index)}
+                disabled={isSubmitting}
+                data-testid={`input-otp-${index}`}
+                className={[
+                  'w-11 h-14 rounded-xl text-center text-2xl font-bold outline-none transition-all duration-150 select-none',
+                  'border-2',
+                  isSubmitting
+                    ? 'cursor-not-allowed opacity-60'
+                    : '',
+                  isFilled
+                    ? 'bg-primary/20 border-primary text-white shadow-lg shadow-primary/20'
+                    : 'bg-slate-700 border-slate-500 text-white',
+                  !isFilled && !isSubmitting
+                    ? 'focus:border-primary focus:bg-slate-600 focus:shadow-md focus:shadow-primary/10'
+                    : '',
+                ].join(' ')}
+              />
+            );
+          })}
         </div>
 
-        {submitOtp.isPending && (
+        {/* Progress hint */}
+        <p className="text-xs text-slate-500 mb-8">
+          {filledCount} / {OTP_LENGTH} digits entered
+        </p>
+
+        {/* Spinner while submitting */}
+        {(submitOtp.isPending || isSubmitting) && (
           <div className="flex justify-center mb-6">
             <Loader2 className="animate-spin text-primary" size={32} />
           </div>
         )}
 
+        {/* Countdown / Resend */}
         <div className="text-slate-400 font-medium text-sm">
           {countdown > 0 ? (
-            <p>Resend OTP in <span className="text-primary font-bold">{countdown}s</span></p>
+            <p>
+              Resend OTP in{' '}
+              <span className="text-primary font-bold">{countdown}s</span>
+            </p>
           ) : (
-            <button className="text-primary font-bold hover:text-white transition-colors" onClick={() => setCountdown(80)}>
+            <button
+              className="text-primary font-bold hover:text-white transition-colors"
+              onClick={handleResend}
+              data-testid="button-resend-otp"
+            >
               Resend OTP Code
             </button>
           )}
         </div>
       </div>
 
+      {/* Footer */}
       <div className="h-24 w-full bg-slate-800 mt-auto rounded-t-[50%] flex flex-col items-center justify-end pb-6 border-t border-slate-700/50">
         <div className="text-xs text-slate-500 font-medium mb-1">Version 1.0.0</div>
-        <button className="text-xs text-primary font-bold hover:text-white transition-colors">Help & Support</button>
+        <button className="text-xs text-primary font-bold hover:text-white transition-colors">
+          Help & Support
+        </button>
       </div>
     </PageTransition>
   );

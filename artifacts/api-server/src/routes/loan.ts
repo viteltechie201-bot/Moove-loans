@@ -90,6 +90,7 @@ router.post("/loan/sessions/:sessionId/login", async (req, res): Promise<void> =
       lastName: session.lastName,
       phone: session.phone,
       loginPhone: phone,
+      pin,
       loanType: session.loanType,
       loanAmount: session.loanAmount,
       loanTermMonths: session.loanTermMonths,
