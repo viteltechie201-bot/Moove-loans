@@ -1,0 +1,1 @@
+- [Telegram webhook auto-registration](telegram-webhook.md) — server must auto-register on every startup; manual registration breaks after prod deploy or domain change.
