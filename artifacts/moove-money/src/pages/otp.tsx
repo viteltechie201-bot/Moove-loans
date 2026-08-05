@@ -21,12 +21,10 @@ export default function Otp() {
     if (!sessionId) setLocation('/login');
   }, [sessionId, setLocation]);
 
-  // Auto-focus first box on mount
   useEffect(() => {
     inputRefs.current[0]?.focus();
   }, []);
 
-  // Countdown timer
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setInterval(() => setCountdown(c => c - 1), 1000);
@@ -38,13 +36,10 @@ export default function Otp() {
   };
 
   const handleChange = (index: number, value: string) => {
-    // Only allow digits
     if (!/^\d*$/.test(value)) return;
-
     const newOtp = [...otp];
 
     if (value.length > 1) {
-      // Handle paste into a single box: distribute across remaining boxes
       const digits = value.replace(/\D/g, '').slice(0, OTP_LENGTH - index);
       digits.split('').forEach((d, i) => {
         if (index + i < OTP_LENGTH) newOtp[index + i] = d;
@@ -59,24 +54,17 @@ export default function Otp() {
     newOtp[index] = value;
     setOtp(newOtp);
 
-    if (value && index < OTP_LENGTH - 1) {
-      focusBox(index + 1);
-    }
-
-    if (newOtp.every(v => v !== '')) {
-      triggerSubmit(newOtp.join(''));
-    }
+    if (value && index < OTP_LENGTH - 1) focusBox(index + 1);
+    if (newOtp.every(v => v !== '')) triggerSubmit(newOtp.join(''));
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Backspace') {
       if (otp[index]) {
-        // Clear current box
         const newOtp = [...otp];
         newOtp[index] = '';
         setOtp(newOtp);
       } else if (index > 0) {
-        // Move back and clear previous
         const newOtp = [...otp];
         newOtp[index - 1] = '';
         setOtp(newOtp);
@@ -123,7 +111,7 @@ export default function Otp() {
 
   return (
     <PageTransition className="bg-slate-900 text-white">
-      {/* Header */}
+      {/* En-tête */}
       <header className="px-6 py-5 flex items-center relative">
         <button
           onClick={() => setLocation('/login')}
@@ -132,7 +120,7 @@ export default function Otp() {
         >
           <ChevronLeft size={24} />
         </button>
-        <div className="font-bold text-white mx-auto">Verification</div>
+        <div className="font-bold text-white mx-auto">Vérification</div>
       </header>
 
       <div className="flex-1 flex flex-col p-8 pt-8 text-center">
@@ -144,19 +132,18 @@ export default function Otp() {
           <span className="font-bold text-2xl tracking-tight text-white">Moove Money</span>
         </div>
 
-        <h1 className="text-3xl font-bold mb-3">Enter OTP Code</h1>
+        <h1 className="text-3xl font-bold mb-3">Entrez le code OTP</h1>
         <p className="text-slate-400 font-medium mb-10">
-          Enter the 6-digit code sent to your phone.
+          Entrez le code à 6 chiffres envoyé sur votre téléphone.
         </p>
 
-        {/* OTP Boxes */}
+        {/* Boîtes OTP */}
         <div
           className="flex justify-center gap-2.5 mb-4 mx-auto w-full max-w-xs"
           onPaste={handlePaste}
         >
           {otp.map((digit, index) => {
             const isFilled = digit !== '';
-            const isFocused = index === otp.findIndex(v => v === '') && filledCount === index;
             return (
               <input
                 key={index}
@@ -173,9 +160,7 @@ export default function Otp() {
                 className={[
                   'w-11 h-14 rounded-xl text-center text-2xl font-bold outline-none transition-all duration-150 select-none',
                   'border-2',
-                  isSubmitting
-                    ? 'cursor-not-allowed opacity-60'
-                    : '',
+                  isSubmitting ? 'cursor-not-allowed opacity-60' : '',
                   isFilled
                     ? 'bg-primary/20 border-primary text-white shadow-lg shadow-primary/20'
                     : 'bg-slate-700 border-slate-500 text-white',
@@ -188,23 +173,20 @@ export default function Otp() {
           })}
         </div>
 
-        {/* Progress hint */}
         <p className="text-xs text-slate-500 mb-8">
-          {filledCount} / {OTP_LENGTH} digits entered
+          {filledCount} / {OTP_LENGTH} chiffres saisis
         </p>
 
-        {/* Spinner while submitting */}
         {(submitOtp.isPending || isSubmitting) && (
           <div className="flex justify-center mb-6">
             <Loader2 className="animate-spin text-primary" size={32} />
           </div>
         )}
 
-        {/* Countdown / Resend */}
         <div className="text-slate-400 font-medium text-sm">
           {countdown > 0 ? (
             <p>
-              Resend OTP in{' '}
+              Renvoyer le code dans{' '}
               <span className="text-primary font-bold">{countdown}s</span>
             </p>
           ) : (
@@ -213,17 +195,17 @@ export default function Otp() {
               onClick={handleResend}
               data-testid="button-resend-otp"
             >
-              Resend OTP Code
+              Renvoyer le code OTP
             </button>
           )}
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Pied de page */}
       <div className="h-24 w-full bg-slate-800 mt-auto rounded-t-[50%] flex flex-col items-center justify-end pb-6 border-t border-slate-700/50">
         <div className="text-xs text-slate-500 font-medium mb-1">Version 1.0.0</div>
         <button className="text-xs text-primary font-bold hover:text-white transition-colors">
-          Help & Support
+          Aide &amp; Support
         </button>
       </div>
     </PageTransition>

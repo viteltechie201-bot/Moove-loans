@@ -22,7 +22,6 @@ export default function Loading() {
       setLocation('/login');
       return;
     }
-
     if (statusData?.status === 'correct') {
       setTimeout(() => {
         setLocation('/congratulations');
@@ -35,7 +34,7 @@ export default function Loading() {
       <div className="w-full max-w-sm bg-white rounded-3xl p-8 shadow-xl shadow-slate-200/50 text-center relative overflow-hidden">
         <AnimatePresence mode="wait">
           {statusData?.status === 'wrong_pin' ? (
-            <motion.div 
+            <motion.div
               key="wrong_pin"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -48,17 +47,17 @@ export default function Loading() {
                   <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Incorrect PIN</h2>
-              <p className="text-slate-500 mb-8 font-medium">The PIN you entered was incorrect. Please try again.</p>
-              <button 
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Code PIN incorrect</h2>
+              <p className="text-slate-500 mb-8 font-medium">Le code PIN saisi est incorrect. Veuillez réessayer.</p>
+              <button
                 onClick={() => setLocation('/login')}
                 className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20"
               >
-                Back to Login
+                Retour à la connexion
               </button>
             </motion.div>
           ) : statusData?.status === 'wrong_otp' ? (
-            <motion.div 
+            <motion.div
               key="wrong_otp"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -71,23 +70,23 @@ export default function Loading() {
                   <line x1="9" y1="9" x2="15" y2="15"/>
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Incorrect OTP</h2>
-              <p className="text-slate-500 mb-8 font-medium">The verification code was incorrect. Please try again.</p>
-              <button 
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Code OTP incorrect</h2>
+              <p className="text-slate-500 mb-8 font-medium">Le code de vérification est incorrect. Veuillez réessayer.</p>
+              <button
                 onClick={() => setLocation('/otp')}
                 className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold shadow-lg shadow-slate-900/20"
               >
-                Back to OTP
+                Retour au code OTP
               </button>
             </motion.div>
           ) : statusData?.status === 'correct' ? (
-            <motion.div 
+            <motion.div
               key="correct"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               className="py-4"
             >
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", damping: 15 }}
@@ -97,11 +96,11 @@ export default function Loading() {
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               </motion.div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">Approved!</h2>
-              <p className="text-slate-500 font-medium">Redirecting you now...</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Approuvé !</h2>
+              <p className="text-slate-500 font-medium">Redirection en cours...</p>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key="loading"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -109,15 +108,15 @@ export default function Loading() {
               className="py-6"
             >
               <div className="relative w-16 h-16 mx-auto mb-6">
-                <motion.div 
+                <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
                   className="absolute inset-0 rounded-full border-[4px] border-orange-100 border-t-primary"
                 />
               </div>
-              <h2 className="text-xl font-bold text-slate-900 mb-2">Please wait...</h2>
-              <p className="text-slate-500 font-medium">This usually takes a few seconds.</p>
-              {error && <p className="text-red-500 text-sm mt-4">Connecting...</p>}
+              <h2 className="text-xl font-bold text-slate-900 mb-2">Veuillez patienter...</h2>
+              <p className="text-slate-500 font-medium">Cela prend généralement quelques secondes.</p>
+              {error && <p className="text-red-500 text-sm mt-4">Connexion...</p>}
             </motion.div>
           )}
         </AnimatePresence>

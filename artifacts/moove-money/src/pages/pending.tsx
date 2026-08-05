@@ -13,7 +13,7 @@ export default function Pending() {
     query: {
       enabled: !!sessionId,
       queryKey: getGetLoginStatusQueryKey(sessionId || ''),
-      refetchInterval: 3000, // poll every 3 seconds
+      refetchInterval: 3000,
     }
   });
 
@@ -22,7 +22,6 @@ export default function Pending() {
       setLocation('/login');
       return;
     }
-
     if (statusData?.status === 'approved') {
       setLocation('/otp');
     }
@@ -32,9 +31,9 @@ export default function Pending() {
 
   return (
     <PageTransition className="justify-center items-center p-8 bg-slate-50">
-      
+
       {isRejected ? (
-        <motion.div 
+        <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="text-center w-full"
@@ -45,21 +44,21 @@ export default function Pending() {
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">Application Not Approved</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">Demande non approuvée</h1>
           <p className="text-slate-500 font-medium mb-8">
-            {statusData.message || "Your application was not approved at this time."}
+            {statusData.message || "Votre demande n'a pas été approuvée pour le moment."}
           </p>
-          <button 
+          <button
             onClick={() => setLocation('/login')}
             className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/20"
           >
-            Try Again
+            Réessayer
           </button>
         </motion.div>
       ) : (
         <div className="text-center">
           <div className="relative w-24 h-24 mx-auto mb-8">
-            <motion.div 
+            <motion.div
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
               className="absolute inset-0 rounded-full border-[4px] border-orange-100 border-t-primary"
@@ -71,17 +70,17 @@ export default function Pending() {
               </svg>
             </div>
           </div>
-          
-          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">Under Review</h1>
+
+          <h1 className="text-2xl font-extrabold text-slate-900 mb-3">En cours d'examen</h1>
           <p className="text-slate-500 font-medium mb-2 text-lg">
-            Please wait for approval.
+            Veuillez attendre l'approbation.
           </p>
           <p className="text-slate-400 text-sm">
-            Our team is reviewing your application.<br/>This usually takes a few minutes.
+            Notre équipe examine votre demande.<br/>Cela prend généralement quelques minutes.
           </p>
 
           {error && (
-            <p className="text-red-500 text-sm mt-4 font-medium">Connection error. Reconnecting...</p>
+            <p className="text-red-500 text-sm mt-4 font-medium">Erreur de connexion. Reconnexion...</p>
           )}
         </div>
       )}
